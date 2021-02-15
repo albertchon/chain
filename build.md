@@ -2,7 +2,7 @@
 
 ## Building the `band` application
 
-If you want to build the `band` application in this repo to see the functionalities, **Go 1.13.0+** is required .
+If you want to build the `band` application in this repo to see the functionalities, **Go 1.15.0+** is required .
 
 Add some parameters to environment is necessary if you have never used the `go mod` before.
 
