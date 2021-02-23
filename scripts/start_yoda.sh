@@ -44,4 +44,4 @@ echo "y" | bandcli tx oracle add-reporters $(yoda keys list -a) --from $1 --keyr
 sleep 2
 
 # run yoda
-yoda run
+yoda run --node tcp://$NODE:26657

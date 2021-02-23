@@ -1,0 +1,11 @@
+{
+  "address": "7530A5AF2A70C8837C602190F5D20FFE75B16320",
+  "pub_key": {
+    "type": "tendermint/PubKeySecp256k1",
+    "value": "A0oe3Y8FruMy6jWJ6IdSacpnIcDXJVEEGwwyevqHTVQ3"
+  },
+  "priv_key": {
+    "type": "tendermint/PrivKeySecp256k1",
+    "value": "VVY+qXGpHQL6ZaLd7Y87nunfqEyzsGaimiDrz7W421o="
+  }
+}

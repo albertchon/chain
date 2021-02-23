@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+import requests
+import sys
+
+COINS_URL = "https://api.coingecko.com/api/v3/coins/list"
+PRICE_URL = "https://api.coingecko.com/api/v3/simple/price"
+
+
+def adjust_rounding(data):
+    if data < 1:
+        return round(data, 8)
+    elif data < 10:
+        return round(data, 6)
+    else:
+        return round(data, 4)
+
+
+def main(symbols):
+    symbols = [symbol.lower() for symbol in symbols]
+    slugs = []
+    coins = requests.get(COINS_URL).json()
+    slugs = [
+        coin["id"]
+        for symbol in symbols
+        for coin in coins
+        if coin["symbol"].lower() == symbol
+    ]
+    # Remove duplicate coins
+    duplicates = [
+        "compound-coin",
+        "farmatrust",
+        "freetip",
+        "blocktrade",
+        "eldorado-token",
+        "payperex",
+        "stox",
+        "menlo-one",
+        "one",
+        "one-hundred-coin-2",
+        "financex-exchange",
+        "firstenergy-token",
+        "u-os-network",
+        "hinto",
+        "hymnode",
+        "hotnow",
+        "hydro-protocol",
+        "beats-token",
+        "genesis-coin",
+        "spartancoin",
+        "unipump",
+        "cannadrix",
+        "bitsou",
+        "tradekax",
+        "futurexcrypto",
+        "mykey",
+        "key",
+        "groovyhooman",
+        "penta",
+        "uni-coin",
+        "unicorn-token",
+        "universe-token",
+    ]
+    slugs = [slug for slug in slugs if slug not in duplicates]
+    slugs_str = ",".join(slugs)
+
+    res = requests.get(PRICE_URL, params={"ids": slugs_str, "vs_currencies": "USD"})
+    result = [
+        (px["usd"], slug)
+        for slug in slugs
+        for (key, px) in list(res.json().items())
+        if slug == key
+    ]
+    return ",".join([str(adjust_rounding(px[0])) for px in result])
+
+
+if __name__ == "__main__":
+    try:
+        print(main([*sys.argv[1:]]))
+    except Exception as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)

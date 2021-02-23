@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set `DIR` to your path of genesis directory.
-DIR=~/genesis_ds_os/genesis
+DIR=~/Workspaces/genesis_ds_os/genesis
 
 bandd add-data-source \
 	"CoinGecko Cryptocurrency Price" \
