@@ -9,16 +9,16 @@ echo "lock nasty suffer dirt dream fine fall deal curtain plate husband sound to
 echo "smile stem oven genius cave resource better lunar nasty moon company ridge brass rather supply used horn three panic put venue analyst leader comic" \
     | bandcli keys add requester --recover --keyring-backend test --account 0
 
-seq 1 16 | while read i; do
+seq 1 17 | while read i; do
     echo "lock nasty suffer dirt dream fine fall deal curtain plate husband sound tower mom crew crawl guard rack snake before fragile course bacon range" \
     | bandcli keys add validator$i --recover --keyring-backend test --account $i;
     bandd add-genesis-account validator$i 10000000000000uband --keyring-backend test;
 done
 
-seq 1 16 | while read i; do
+seq 1 50 | while read i; do
     echo "smile stem oven genius cave resource better lunar nasty moon company ridge brass rather supply used horn three panic put venue analyst leader comic" \
     | bandcli keys add requester$i --recover --keyring-backend test --account $i;
-bandd add-genesis-account requester$i 10000000000000uband --keyring-backend test;
+    bandd add-genesis-account requester$i 10000000000000uband --keyring-backend test;
 done
 
 # add accounts to genesis
@@ -142,6 +142,13 @@ bandd gentx \
     --node-id 17f8baf6a124674180d447b3384da504978079fa \
     --pubkey bandvalconspub1addwnpepq0fw9cykzxyfhlt5n8e0tyrpq3lxt3puguaznpzm8e35d5rgcp4w5kn3hzm \
     --name validator16 \
+    --keyring-backend test
+
+bandd gentx \
+    --amount 100000000uband \
+    --node-id 447ff3a50e3141a588df179e760f30ad4720f33d \
+    --pubkey bandvalconspub1addwnpepqgct6nxy6vhxfma2zwffk7cufzpsvy98da8nyaun97hs0jgwud95g9raq4e \
+    --name validator17 \
     --keyring-backend test
 
 /Users/thebevrishot/Workspaces/genesis_ds_os/genesis/scripts/add_os_ds.sh

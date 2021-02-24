@@ -1,0 +1,13 @@
+[Unit]
+Description=BandChain Node Daemon
+After=network-online.target
+
+[Service]
+User=panu
+ExecStart=/home/panu/go/bin/bandd start --rpc.laddr tcp://0.0.0.0:26657
+Restart=always
+RestartSec=3
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

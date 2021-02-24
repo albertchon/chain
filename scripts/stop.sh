@@ -1,0 +1,16 @@
+ssh test-sentry sudo systemctl stop bandd yoda
+ssh panu@35.186.146.40 sudo systemctl stop bandd yoda
+ssh panu@34.87.157.46 sudo systemctl stop bandd yoda
+ssh panu@35.247.144.166 sudo systemctl stop bandd yoda
+ssh panu@35.240.186.168 sudo systemctl stop bandd yoda
+ssh panu@35.198.234.27 sudo systemctl stop bandd yoda
+ssh panu@35.197.155.123 sudo systemctl stop bandd yoda
+ssh panu@35.247.178.105 sudo systemctl stop bandd yoda
+ssh panu@34.87.140.17 sudo systemctl stop bandd yoda
+ssh panu@34.126.117.93 sudo systemctl stop bandd yoda
+ssh panu@34.126.90.149 sudo systemctl stop bandd yoda
+ssh panu@35.240.192.40 sudo systemctl stop bandd yoda
+ssh panu@34.87.115.122 sudo systemctl stop bandd yoda
+ssh panu@35.240.241.225 sudo systemctl stop bandd yoda
+ssh panu@34.87.143.228 sudo systemctl stop bandd yoda
+ssh panu@34.87.115.167 sudo systemctl stop bandd yoda

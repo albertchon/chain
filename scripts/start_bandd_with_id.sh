@@ -7,4 +7,4 @@ dropdb my_db
 createdb my_db
 
 # start bandchain
-bandd start --rpc.laddr tcp://0.0.0.0:26657
+# bandd start --rpc.laddr tcp://0.0.0.0:26657

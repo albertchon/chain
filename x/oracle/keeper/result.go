@@ -79,6 +79,7 @@ func (k Keeper) ResolveExpired(ctx sdk.Context, id types.RequestID) {
 func (k Keeper) SaveResult(
 	ctx sdk.Context, id types.RequestID, status types.ResolveStatus, result []byte,
 ) {
+	fmt.Println("Save result", id)
 	r := k.MustGetRequest(ctx, id)
 	reqPacket := types.NewOracleRequestPacketData(
 		r.ClientID,                         // ClientID

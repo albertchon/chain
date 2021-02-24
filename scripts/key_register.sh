@@ -1,0 +1,15 @@
+yes | ssh test-sentry ls
+yes | ssh panu@35.186.146.40 ls
+yes | ssh panu@34.87.157.46 ls
+yes | ssh panu@35.247.144.166 ls
+yes | ssh panu@35.240.186.168 ls
+yes | ssh panu@35.198.234.27 ls
+yes | ssh panu@35.197.155.123 ls
+yes | ssh panu@35.247.178.105 ls
+yes | ssh panu@34.87.140.17 ls
+yes | ssh panu@34.126.117.93 ls
+yes | ssh panu@34.126.90.149 ls
+yes | ssh panu@35.240.192.40 ls
+yes | ssh panu@34.87.115.122 ls
+yes | ssh panu@35.240.241.225 ls
+yes | ssh panu@34.87.143.228 ls
