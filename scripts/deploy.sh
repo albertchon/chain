@@ -16,6 +16,8 @@ scp .env $NODE:~/
 
 ssh $NODE <<EOF
 
+ulimit -n 65535
+
 echo "export PATH=\$PATH:/usr/local/go/bin:~/go/bin" >> /home/panu/.profile
 source ~/.profile
 

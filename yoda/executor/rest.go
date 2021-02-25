@@ -3,6 +3,7 @@ package executor
 import (
 	"encoding/base64"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/levigross/grequests"
@@ -29,10 +30,11 @@ type cacheEntry struct {
 	Duration time.Duration
 }
 
-var cacheExecResult = map[string]cacheEntry{}
+var cacheExecResult = sync.Map{} // map[string]cacheEntry{}
 
 func (e *RestExec) Exec(code []byte, arg string, env interface{}) (ExecResult, error) {
-	if e, ok := cacheExecResult[arg]; ok {
+	if v, ok := cacheExecResult.Load(arg); ok {
+		e := v.(cacheEntry)
 		time.Sleep(e.Duration)
 		return e.ExecResult, nil
 	}
@@ -77,7 +79,7 @@ func (e *RestExec) Exec(code []byte, arg string, env interface{}) (ExecResult, e
 	if r.Returncode == 0 {
 		cacheDur := time.Since(start)
 		entry := ExecResult{Output: []byte(r.Stdout), Code: 0, Version: r.Version}
-		cacheExecResult[arg] = cacheEntry{entry, cacheDur}
+		cacheExecResult.Store(arg, cacheEntry{entry, cacheDur})
 		return entry, nil
 	} else {
 		return ExecResult{Output: []byte(r.Stderr), Code: r.Returncode, Version: r.Version}, nil
