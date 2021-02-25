@@ -12,7 +12,7 @@ yoda config validator $(bandcli keys show $1 -a --bech val --keyring-backend tes
 yoda config executor "rest:https://iv3lgtv11a.execute-api.ap-southeast-1.amazonaws.com/live/master?timeout=10s"
 
 # setup broadcast-timeout to yoda config
-yoda config broadcast-timeout "5m"
+yoda config broadcast-timeout "1m"
 
 # setup rpc-poll-interval to yoda config
 yoda config rpc-poll-interval "1s"
@@ -31,13 +31,27 @@ do
   yoda keys add reporter$i
 done
 
+sleep 100
+
 # send band tokens to reporters
+echo "y" | bandcli tx multi-send 1000000uband $(yoda keys list -a) --from $1 --keyring-backend test
+sleep 5
+
+echo "y" | bandcli tx multi-send 1000000uband $(yoda keys list -a) --from $1 --keyring-backend test
+sleep 5
+
 echo "y" | bandcli tx multi-send 1000000uband $(yoda keys list -a) --from $1 --keyring-backend test
 
 # wait for sending band tokens transaction success
-sleep 10
+sleep 40
 
 # add reporter to bandchain
+echo "y" | bandcli tx oracle add-reporters $(yoda keys list -a) --from $1 --keyring-backend test
+sleep 5
+
+echo "y" | bandcli tx oracle add-reporters $(yoda keys list -a) --from $1 --keyring-backend test
+sleep 5
+
 echo "y" | bandcli tx oracle add-reporters $(yoda keys list -a) --from $1 --keyring-backend test
 
 # wait for addding reporter transaction success

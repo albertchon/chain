@@ -24,7 +24,19 @@ type externalExecutionResponse struct {
 	Version    string `json:"version"`
 }
 
+type cacheEntry struct {
+	ExecResult
+	Duration time.Duration
+}
+
+var cacheExecResult = map[string]cacheEntry{}
+
 func (e *RestExec) Exec(code []byte, arg string, env interface{}) (ExecResult, error) {
+	if e, ok := cacheExecResult[arg]; ok {
+		time.Sleep(e.Duration)
+		return e.ExecResult, nil
+	}
+	start := time.Now()
 	executable := base64.StdEncoding.EncodeToString(code)
 	resp, err := grequests.Post(
 		e.url,
@@ -63,7 +75,10 @@ func (e *RestExec) Exec(code []byte, arg string, env interface{}) (ExecResult, e
 	}
 
 	if r.Returncode == 0 {
-		return ExecResult{Output: []byte(r.Stdout), Code: 0, Version: r.Version}, nil
+		cacheDur := time.Since(start)
+		entry := ExecResult{Output: []byte(r.Stdout), Code: 0, Version: r.Version}
+		cacheExecResult[arg] = cacheEntry{entry, cacheDur}
+		return entry, nil
 	} else {
 		return ExecResult{Output: []byte(r.Stderr), Code: r.Returncode, Version: r.Version}, nil
 	}

@@ -27,7 +27,7 @@ const (
 	// TODO: We can subscribe only for txs that contain request messages
 	TxQuery = "tm.event = 'Tx'"
 	// EventChannelCapacity is a buffer size of channel between node and this program
-	EventChannelCapacity = 2000
+	EventChannelCapacity = 2000000
 )
 
 func runImpl(c *Context, l *Logger) error {

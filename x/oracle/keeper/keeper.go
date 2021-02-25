@@ -17,6 +17,25 @@ const (
 	RollingSeedSizeInBytes = 32
 )
 
+type BlockState struct {
+	IncomingRequest int64
+	Resolve         int64
+	RequestsTime    int64 // micro seconds
+	ResolveTime     int64 // micro seconds
+}
+
+func (s *BlockState) Reset() {
+	s.IncomingRequest = 0
+	s.Resolve = 0
+	s.RequestsTime = 0
+	s.ResolveTime = 0
+}
+
+func (s *BlockState) Print() {
+	fmt.Printf("incoming request, resolve, requests time, resolve time, %d, %d, %d, %d\n",
+		s.IncomingRequest, s.Resolve, s.RequestsTime, s.ResolveTime)
+}
+
 type Keeper struct {
 	storeKey         sdk.StoreKey
 	cdc              *codec.Codec
@@ -27,6 +46,13 @@ type Keeper struct {
 	stakingKeeper    types.StakingKeeper
 	distrKeeper      types.DistrKeeper
 	owasmVM          *owasm.Vm
+	requests         []int64
+	blockStat        *BlockState
+}
+
+func (k Keeper) PrintStat() {
+	k.blockStat.Print()
+	k.blockStat.Reset()
 }
 
 // NewKeeper creates a new oracle Keeper instance.
@@ -49,6 +75,8 @@ func NewKeeper(
 		stakingKeeper:    stakingKeeper,
 		distrKeeper:      distrKeeper,
 		owasmVM:          owasmVM,
+		requests:         make([]int64, 100000),
+		blockStat:        &BlockState{},
 	}
 }
 
@@ -122,6 +150,7 @@ func (k Keeper) GetNextRequestID(ctx sdk.Context) types.RequestID {
 	requestNumber := k.GetRequestCount(ctx)
 	bz := k.cdc.MustMarshalBinaryLengthPrefixed(requestNumber + 1)
 	ctx.KVStore(k.storeKey).Set(types.RequestCountStoreKey, bz)
+	k.requests[requestNumber] = ctx.BlockHeight()
 	return types.RequestID(requestNumber + 1)
 }
 

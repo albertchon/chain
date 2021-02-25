@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/hex"
 	"fmt"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -11,6 +12,8 @@ import (
 	"github.com/bandprotocol/chain/pkg/bandrng"
 	"github.com/bandprotocol/chain/x/oracle/types"
 )
+
+const FixedResolve = 4_100_000
 
 // GetRandomValidators returns a pseudorandom subset of active validators. Each validator has
 // chance of getting selected directly proportional to the amount of voting power it has.
@@ -45,12 +48,12 @@ func (k Keeper) GetRandomValidators(ctx sdk.Context, size int, id int64) ([]sdk.
 // PrepareRequest takes an request specification object, performs the prepare call, and saves
 // the request object to store. Also emits events related to the request.
 func (k Keeper) PrepareRequest(ctx sdk.Context, r types.RequestSpec) error {
+	start := time.Now()
 	askCount := r.GetAskCount()
 	if askCount > k.GetParam(ctx, types.KeyMaxAskCount) {
 		return sdkerrors.Wrapf(types.ErrInvalidAskCount, "got: %d, max: %d", askCount, k.GetParam(ctx, types.KeyMaxAskCount))
 	}
 	// Consume gas for data requests. We trust that we have reasonable params that don't cause overflow.
-	ctx.GasMeter().ConsumeGas(k.GetParam(ctx, types.KeyBaseRequestGas), "BASE_REQUEST_FEE")
 	ctx.GasMeter().ConsumeGas(askCount*k.GetParam(ctx, types.KeyPerValidatorRequestGas), "PER_VALIDATOR_REQUEST_FEE")
 	// Get a random validator set to perform this request.
 	validators, err := k.GetRandomValidators(ctx, int(askCount), k.GetRequestCount(ctx)+1)
@@ -73,6 +76,7 @@ func (k Keeper) PrepareRequest(ctx sdk.Context, r types.RequestSpec) error {
 	if err != nil {
 		return sdkerrors.Wrapf(types.ErrBadWasmExecution, err.Error())
 	}
+	ctx.GasMeter().ConsumeGas(uint64(output.GasUsed)/5, "PREPARE_GAS")
 	// Preparation complete! It's time to collect raw request ids.
 	req.RawRequests = env.GetRawRequests()
 	if len(req.RawRequests) == 0 {
@@ -109,22 +113,32 @@ func (k Keeper) PrepareRequest(ctx sdk.Context, r types.RequestSpec) error {
 			sdk.NewAttribute(types.AttributeKeyCalldata, string(rawReq.Calldata)),
 		))
 	}
+
+	k.blockStat.IncomingRequest++
+	k.blockStat.RequestsTime += time.Since(start).Microseconds()
+	ctx.GasMeter().ConsumeGas(FixedResolve/5, "RESOLVE_RESERVATION")
 	return nil
 }
 
 // ResolveRequest resolves the given request and saves the result to the store. The function
 // assumes that the given request is in a resolvable state with sufficient reporters.
 func (k Keeper) ResolveRequest(ctx sdk.Context, reqID types.RequestID) {
+	start := time.Now()
 	req := k.MustGetRequest(ctx, reqID)
 	env := types.NewExecuteEnv(req, k.GetReports(ctx, reqID))
 	script := k.MustGetOracleScript(ctx, req.OracleScriptID)
 	code := k.GetFile(script.Filename)
-	output, err := k.owasmVM.Execute(code, types.WasmExecuteGas, types.MaxDataSize, env)
+	output, err := k.owasmVM.Execute(code, FixedResolve, types.MaxDataSize, env)
 	if err != nil {
+		fmt.Printf("Fail to resolve %s\n", err.Error())
 		k.ResolveFailure(ctx, reqID, err.Error())
 	} else if env.Retdata == nil {
 		k.ResolveFailure(ctx, reqID, "no return data")
 	} else {
+		fmt.Printf("Resolve %d\n", output.GasUsed)
 		k.ResolveSuccess(ctx, reqID, env.Retdata, output.GasUsed)
 	}
+
+	k.blockStat.RequestsTime += time.Since(start).Microseconds()
+	k.blockStat.Resolve++
 }
