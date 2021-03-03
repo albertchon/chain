@@ -20,7 +20,7 @@ func handleBeginBlock(ctx sdk.Context, k Keeper, req abci.RequestBeginBlock) {
 
 // handleEndBlock cleans up the state during end block. See comment in the implementation!
 func handleEndBlock(ctx sdk.Context, k Keeper) {
-	k.PrintStat()
+	k.PrintStat(int(ctx.BlockHeight()), ctx.BlockTime())
 	fmt.Printf("gas block consumed %d/%d\n", ctx.BlockGasMeter().GasConsumed(), ctx.BlockGasMeter().Limit())
 	// Loops through all requests in the resolvable list to resolve all of them!
 	for _, reqID := range k.GetPendingResolveList(ctx) {

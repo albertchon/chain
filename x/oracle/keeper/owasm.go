@@ -49,6 +49,7 @@ func (k Keeper) GetRandomValidators(ctx sdk.Context, size int, id int64) ([]sdk.
 // the request object to store. Also emits events related to the request.
 func (k Keeper) PrepareRequest(ctx sdk.Context, r types.RequestSpec) error {
 	start := time.Now()
+	startGas := ctx.GasMeter().GasConsumed()
 	askCount := r.GetAskCount()
 	if askCount > k.GetParam(ctx, types.KeyMaxAskCount) {
 		return sdkerrors.Wrapf(types.ErrInvalidAskCount, "got: %d, max: %d", askCount, k.GetParam(ctx, types.KeyMaxAskCount))
@@ -72,10 +73,13 @@ func (k Keeper) PrepareRequest(ctx sdk.Context, r types.RequestSpec) error {
 		return err
 	}
 	code := k.GetFile(script.Filename)
+	startPrepare := time.Now()
 	output, err := k.owasmVM.Prepare(code, types.WasmPrepareGas, types.MaxDataSize, env)
 	if err != nil {
 		return sdkerrors.Wrapf(types.ErrBadWasmExecution, err.Error())
 	}
+	k.Prepare(startPrepare, uint64(output.GasUsed)/5)
+	preparedTime := time.Since(startPrepare)
 	ctx.GasMeter().ConsumeGas(uint64(output.GasUsed)/5, "PREPARE_GAS")
 	// Preparation complete! It's time to collect raw request ids.
 	req.RawRequests = env.GetRawRequests()
@@ -114,9 +118,15 @@ func (k Keeper) PrepareRequest(ctx sdk.Context, r types.RequestSpec) error {
 		))
 	}
 
-	k.blockStat.IncomingRequest++
-	k.blockStat.RequestsTime += time.Since(start).Microseconds()
 	ctx.GasMeter().ConsumeGas(FixedResolve/5, "RESOLVE_RESERVATION")
+	k.Request(start, ctx.GasMeter().GasConsumed()-startGas)
+	k.NewRequest(
+		ctx,
+		int64(ctx.GasMeter().GasConsumed()-startGas),
+		time.Since(start),
+		int64(output.GasUsed)/5,
+		preparedTime,
+	)
 	return nil
 }
 
@@ -124,21 +134,30 @@ func (k Keeper) PrepareRequest(ctx sdk.Context, r types.RequestSpec) error {
 // assumes that the given request is in a resolvable state with sufficient reporters.
 func (k Keeper) ResolveRequest(ctx sdk.Context, reqID types.RequestID) {
 	start := time.Now()
+	gasStart := ctx.GasMeter().GasConsumed()
 	req := k.MustGetRequest(ctx, reqID)
 	env := types.NewExecuteEnv(req, k.GetReports(ctx, reqID))
 	script := k.MustGetOracleScript(ctx, req.OracleScriptID)
 	code := k.GetFile(script.Filename)
+	startExec := time.Now()
 	output, err := k.owasmVM.Execute(code, FixedResolve, types.MaxDataSize, env)
+	k.Execute(startExec, uint64(output.GasUsed)/5)
+	timeExec := time.Since(startExec)
 	if err != nil {
 		fmt.Printf("Fail to resolve %s\n", err.Error())
 		k.ResolveFailure(ctx, reqID, err.Error())
 	} else if env.Retdata == nil {
 		k.ResolveFailure(ctx, reqID, "no return data")
 	} else {
-		fmt.Printf("Resolve %d\n", output.GasUsed)
 		k.ResolveSuccess(ctx, reqID, env.Retdata, output.GasUsed)
 	}
-
-	k.blockStat.RequestsTime += time.Since(start).Microseconds()
-	k.blockStat.Resolve++
+	k.Resolve(start, ctx.GasMeter().GasConsumed()-gasStart)
+	k.RecordResolve(
+		ctx,
+		int64(reqID),
+		int64(ctx.GasMeter().GasConsumed()-gasStart),
+		time.Since(start),
+		int64(output.GasUsed/5),
+		timeExec,
+	)
 }

@@ -33,6 +33,7 @@ require (
 	github.com/tendermint/tendermint v0.33.8
 	github.com/tendermint/tm-db v0.5.1
 	github.com/ziutek/mymysql v1.5.4 // indirect
+	gopkg.in/rethinkdb/rethinkdb-go.v6 v6.2.1
 )
 
 replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.2-alpha.regen.1

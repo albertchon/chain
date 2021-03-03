@@ -2,12 +2,14 @@ package keeper
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/params"
 	"github.com/tendermint/tendermint/libs/log"
 
+	"github.com/bandprotocol/chain/debug"
 	"github.com/bandprotocol/chain/pkg/filecache"
 	"github.com/bandprotocol/chain/x/oracle/types"
 	owasm "github.com/bandprotocol/go-owasm/api"
@@ -16,25 +18,6 @@ import (
 const (
 	RollingSeedSizeInBytes = 32
 )
-
-type BlockState struct {
-	IncomingRequest int64
-	Resolve         int64
-	RequestsTime    int64 // micro seconds
-	ResolveTime     int64 // micro seconds
-}
-
-func (s *BlockState) Reset() {
-	s.IncomingRequest = 0
-	s.Resolve = 0
-	s.RequestsTime = 0
-	s.ResolveTime = 0
-}
-
-func (s *BlockState) Print() {
-	fmt.Printf("incoming request, resolve, requests time, resolve time, %d, %d, %d, %d\n",
-		s.IncomingRequest, s.Resolve, s.RequestsTime, s.ResolveTime)
-}
 
 type Keeper struct {
 	storeKey         sdk.StoreKey
@@ -47,11 +30,64 @@ type Keeper struct {
 	distrKeeper      types.DistrKeeper
 	owasmVM          *owasm.Vm
 	requests         []int64
-	blockStat        *BlockState
+	blockStat        *debug.BlockState
 }
 
-func (k Keeper) PrintStat() {
-	k.blockStat.Print()
+func (s *Keeper) Request(start time.Time, gas uint64) {
+	s.blockStat.Request(start, int64(gas))
+}
+
+func (s *Keeper) Resolve(start time.Time, gas uint64) {
+	s.blockStat.Resolve(start, int64(gas))
+}
+
+func (s *Keeper) Prepare(start time.Time, gas uint64) {
+	s.blockStat.Prepare(start, int64(gas))
+}
+
+func (s *Keeper) Execute(start time.Time, gas uint64) {
+	s.blockStat.Execute(start, int64(gas))
+}
+
+func (s *Keeper) NewRequest(
+	ctx sdk.Context,
+	gasUsed int64,
+	timeUsed time.Duration,
+	owasmGas int64,
+	owasmTime time.Duration,
+) {
+	s.blockStat.NewRequest(
+		ctx.BlockHeight(),
+		gasUsed,
+		timeUsed,
+		owasmGas,
+		owasmTime,
+	)
+}
+
+func (s *Keeper) RecordResolve(
+	ctx sdk.Context,
+	requestID int64,
+	resolveGasUsed int64,
+	resolveTimeUsed time.Duration,
+	executeGasUsed int64,
+	executeTimeUsed time.Duration,
+) {
+	s.blockStat.FinishResolve(
+		requestID,
+		ctx.BlockHeight(),
+		resolveGasUsed,
+		resolveTimeUsed,
+		executeGasUsed,
+		executeTimeUsed,
+	)
+}
+
+func (k Keeper) PrintStat(block int, blockTime time.Time) {
+	k.blockStat.CurrentBlock = int64(block)
+	k.blockStat.CurrentBlockTime = blockTime
+
+	k.blockStat.Record()
 	k.blockStat.Reset()
 }
 
@@ -60,7 +96,7 @@ func NewKeeper(
 	cdc *codec.Codec, key sdk.StoreKey, fileDir string, feeCollectorName string,
 	paramSpace params.Subspace, supplyKeeper types.SupplyKeeper,
 	stakingKeeper types.StakingKeeper, distrKeeper types.DistrKeeper,
-	owasmVM *owasm.Vm,
+	owasmVM *owasm.Vm, dbAddress string, table string,
 ) Keeper {
 	if !paramSpace.HasKeyTable() {
 		paramSpace = paramSpace.WithKeyTable(ParamKeyTable())
@@ -76,7 +112,7 @@ func NewKeeper(
 		distrKeeper:      distrKeeper,
 		owasmVM:          owasmVM,
 		requests:         make([]int64, 100000),
-		blockStat:        &BlockState{},
+		blockStat:        debug.NewBlockState(dbAddress, table),
 	}
 }
 

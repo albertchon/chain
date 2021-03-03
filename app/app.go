@@ -143,6 +143,7 @@ func NewBandApp(
 	logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool,
 	invCheckPeriod uint, skipUpgradeHeights map[int64]bool, home string,
 	disableFeelessReports bool, logLocaltion string, owasmCacheSize uint64,
+	debugAddress, debugTable string,
 	baseAppOptions ...func(*bam.BaseApp),
 ) *BandApp {
 	cdc := MakeCodec()
@@ -192,7 +193,7 @@ func NewBandApp(
 	app.CrisisKeeper = crisis.NewKeeper(crisisSubspace, invCheckPeriod, app.SupplyKeeper, auth.FeeCollectorName)
 	app.SlashingKeeper = slashing.NewKeeper(cdc, keys[slashing.StoreKey], &stakingKeeper, slashingSubspace)
 	app.UpgradeKeeper = upgrade.NewKeeper(skipUpgradeHeights, keys[upgrade.StoreKey], cdc)
-	app.OracleKeeper = oracle.NewKeeper(cdc, keys[oracle.StoreKey], filepath.Join(viper.GetString(cli.HomeFlag), "files"), auth.FeeCollectorName, oracleSubspace, app.SupplyKeeper, &stakingKeeper, app.DistrKeeper, owasmVm)
+	app.OracleKeeper = oracle.NewKeeper(cdc, keys[oracle.StoreKey], filepath.Join(viper.GetString(cli.HomeFlag), "files"), auth.FeeCollectorName, oracleSubspace, app.SupplyKeeper, &stakingKeeper, app.DistrKeeper, owasmVm, debugAddress, debugTable)
 	// Register the proposal types.
 	govRouter := gov.NewRouter()
 	govRouter.
