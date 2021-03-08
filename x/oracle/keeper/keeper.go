@@ -33,6 +33,10 @@ type Keeper struct {
 	blockStat        *debug.BlockState
 }
 
+func (s *Keeper) Hook() *debug.Hook {
+	return s.blockStat.Hook()
+}
+
 func (s *Keeper) Request(start time.Time, gas uint64) {
 	s.blockStat.Request(start, int64(gas))
 }
@@ -89,6 +93,10 @@ func (k Keeper) PrintStat(block int, blockTime time.Time) {
 
 	k.blockStat.Record()
 	k.blockStat.Reset()
+}
+
+func (k Keeper) SetPendingAmount(x int) {
+	k.blockStat.SetPendingAmount(x)
 }
 
 // NewKeeper creates a new oracle Keeper instance.

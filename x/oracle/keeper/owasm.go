@@ -14,6 +14,15 @@ import (
 )
 
 const FixedResolve = 4_100_000
+const Factor = 8
+
+func convertToOwasmGas(cosmos uint64) uint32 {
+	return uint32(cosmos * Factor)
+}
+
+func convertToCosmosGas(owasm uint32) uint64 {
+	return uint64(owasm / Factor)
+}
 
 // GetRandomValidators returns a pseudorandom subset of active validators. Each validator has
 // chance of getting selected directly proportional to the amount of voting power it has.
@@ -78,9 +87,9 @@ func (k Keeper) PrepareRequest(ctx sdk.Context, r types.RequestSpec) error {
 	if err != nil {
 		return sdkerrors.Wrapf(types.ErrBadWasmExecution, err.Error())
 	}
-	k.Prepare(startPrepare, uint64(output.GasUsed)/5)
+	k.Prepare(startPrepare, convertToCosmosGas(output.GasUsed))
 	preparedTime := time.Since(startPrepare)
-	ctx.GasMeter().ConsumeGas(uint64(output.GasUsed)/5, "PREPARE_GAS")
+	ctx.GasMeter().ConsumeGas(convertToCosmosGas(output.GasUsed), "PREPARE_GAS")
 	// Preparation complete! It's time to collect raw request ids.
 	req.RawRequests = env.GetRawRequests()
 	if len(req.RawRequests) == 0 {
@@ -118,13 +127,13 @@ func (k Keeper) PrepareRequest(ctx sdk.Context, r types.RequestSpec) error {
 		))
 	}
 
-	ctx.GasMeter().ConsumeGas(FixedResolve/5, "RESOLVE_RESERVATION")
+	ctx.GasMeter().ConsumeGas(convertToCosmosGas(FixedResolve), "RESOLVE_RESERVATION")
 	k.Request(start, ctx.GasMeter().GasConsumed()-startGas)
 	k.NewRequest(
 		ctx,
 		int64(ctx.GasMeter().GasConsumed()-startGas),
 		time.Since(start),
-		int64(output.GasUsed)/5,
+		int64(convertToCosmosGas(FixedResolve)),
 		preparedTime,
 	)
 	return nil
@@ -157,7 +166,7 @@ func (k Keeper) ResolveRequest(ctx sdk.Context, reqID types.RequestID) {
 		int64(reqID),
 		int64(ctx.GasMeter().GasConsumed()-gasStart),
 		time.Since(start),
-		int64(output.GasUsed/5),
+		int64(convertToCosmosGas(output.GasUsed)),
 		timeExec,
 	)
 }

@@ -25,7 +25,7 @@ source ~/.profile
 
 # prepare
 # ./scripts/start_bandd_with_id.sh $ID
-./scripts/start_yoda.sh $VALIDATOR 8
+./scripts/start_yoda.sh $VALIDATOR 5
 
 # sudo cp bandd.service /etc/systemd/system/bandd.service
 sudo cp yoda.service /etc/systemd/system/yoda.service

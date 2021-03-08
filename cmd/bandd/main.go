@@ -143,6 +143,9 @@ func newApp(logger log.Logger, db dbm.DB, traceStore io.Writer) abci.Application
 		}
 		bandApp.AddHook(price.NewHook(bandApp.Codec(), bandApp.OracleKeeper, oids, filepath.Join(viper.GetString(cli.HomeFlag), "prices")))
 	}
+	if h := bandApp.OracleKeeper.Hook(); h != nil {
+		bandApp.AddHook(h)
+	}
 	return bandApp
 }
 

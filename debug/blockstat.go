@@ -1,6 +1,7 @@
 package debug
 
 import (
+	"fmt"
 	"time"
 
 	r "gopkg.in/rethinkdb/rethinkdb-go.v6"
@@ -123,14 +124,16 @@ type BlockState struct {
 	requests map[int64]RequestStat
 	events   []Event
 
+	db *DB
 	// TODO
-	dbClient *r.Session
-	table    string
+	// dbClient *r.Session
+	// table    string
+
+	hook *Hook
 }
 
 func NewBlockState(dbAddress string, table string) *BlockState {
 	s := &BlockState{
-		table:        table,
 		requestsStat: NewStat("requests"),
 		resolvesStat: NewStat("resolve"),
 		preparesStat: NewStat("prepare"),
@@ -144,30 +147,46 @@ func NewBlockState(dbAddress string, table string) *BlockState {
 			Address: dbAddress,
 		})
 
-		s.dbClient = session
-
 		if err != nil {
 			panic("init db fail : " + err.Error())
 		}
 
-		if err := r.DBCreate(table).Exec(s.dbClient); err != nil {
-			panic("init table fail : " + err.Error())
+		if err := r.DBCreate(table).Exec(session); err != nil {
+			fmt.Println("warning", "init table fail : ", err.Error())
 		}
 
-		if err := r.DB(table).TableCreate("blocks").Exec(s.dbClient); err != nil {
-			panic("init table fail : " + err.Error())
+		if err := r.DB(table).TableCreate("blocks").Exec(session); err != nil {
+			fmt.Println("warning", "init table fail : ", err.Error())
 		}
 
-		if err := r.DB(table).TableCreate("requests").Exec(s.dbClient); err != nil {
-			panic("init table fail : " + err.Error())
+		if err := r.DB(table).TableCreate("requests").Exec(session); err != nil {
+			fmt.Println("warning", "init table fail : ", err.Error())
 		}
 
-		if err := r.DB(table).TableCreate("events").Exec(s.dbClient); err != nil {
-			panic("init table fail : " + err.Error())
+		if err := r.DB(table).TableCreate("events").Exec(session); err != nil {
+			fmt.Println("warning", "init table fail : ", err.Error())
 		}
+
+		if err := r.DB(table).TableCreate("block-stats").Exec(session); err != nil {
+			fmt.Println("warning", "init table fail : ", err.Error())
+		}
+
+		s.db = NewDB(session, table, 10)
+
+		s.hook = NewHook(s.db, table)
 	}
 
 	return s
+}
+
+func (s *BlockState) Hook() *Hook {
+	return s.hook
+}
+
+func (s *BlockState) SetPendingAmount(x int) {
+	if s.hook != nil {
+		s.hook.hookBlock.Resolved = x
+	}
 }
 
 func (s *BlockState) Reset() {
@@ -179,8 +198,7 @@ func (s *BlockState) Reset() {
 }
 
 func (s *BlockState) Record() {
-	if s.dbClient != nil {
-
+	if s.db != nil {
 		m := map[string]interface{}{
 			"currentBlock":     s.CurrentBlock,
 			"currentBlockTime": s.CurrentBlockTime,
@@ -191,18 +209,14 @@ func (s *BlockState) Record() {
 		s.executeStat.AddStat(m)
 		s.reportStat.AddStat(m)
 
-		if err := r.DB(s.table).Table("blocks").Insert(m).Exec(s.dbClient); err != nil {
-			panic("Fail to record stat : " + err.Error())
-		}
+		s.db.Insert("blocks", m)
 
 		recorded := []int64{}
 		for _, req := range s.requests {
 			if req.ResolveAtBlock == 0 {
 				continue
 			}
-			if err := r.DB(s.table).Table("requests").Insert(req).Exec(s.dbClient); err != nil {
-				panic("Fail to record requests : " + err.Error())
-			}
+			s.db.Insert("requests", req)
 
 			recorded = append(recorded, req.RequestID)
 		}
@@ -213,9 +227,7 @@ func (s *BlockState) Record() {
 
 		for _, e := range s.events {
 			e.Table = "events"
-			if err := r.DB(s.table).Table("events").Insert(e).Exec(s.dbClient); err != nil {
-				panic("Fail to record events : " + err.Error())
-			}
+			s.db.Insert("events", e)
 		}
 	}
 }

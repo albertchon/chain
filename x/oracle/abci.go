@@ -23,9 +23,12 @@ func handleEndBlock(ctx sdk.Context, k Keeper) {
 	k.PrintStat(int(ctx.BlockHeight()), ctx.BlockTime())
 	fmt.Printf("gas block consumed %d/%d\n", ctx.BlockGasMeter().GasConsumed(), ctx.BlockGasMeter().Limit())
 	// Loops through all requests in the resolvable list to resolve all of them!
+	x := 0
 	for _, reqID := range k.GetPendingResolveList(ctx) {
 		k.ResolveRequest(ctx, reqID)
+		x++
 	}
+	k.SetPendingAmount(x)
 	// Once all the requests are resolved, we can clear the list.
 	k.SetPendingResolveList(ctx, []types.RequestID{})
 	// Lastly, we clean up data requests that are supposed to be expired.
