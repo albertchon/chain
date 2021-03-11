@@ -151,7 +151,8 @@ bandd gentx \
     --name validator17 \
     --keyring-backend test
 
-/Users/thebevrishot/Workspaces/genesis_ds_os/genesis/scripts/add_os_ds.sh
+# /Users/thebevrishot/Workspaces/genesis_ds_os/genesis/scripts/add_os_ds.sh
+./scripts/create-mainnet-os-ds.sh
 
 # collect genesis transactions
 bandd collect-gentxs

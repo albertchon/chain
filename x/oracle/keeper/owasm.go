@@ -13,8 +13,9 @@ import (
 	"github.com/bandprotocol/chain/x/oracle/types"
 )
 
+const FixedOwasmGas = 20000
 const FixedResolve = 4_100_000
-const Factor = 8
+const Factor = 7
 
 func convertToOwasmGas(cosmos uint64) uint32 {
 	return uint32(cosmos * Factor)
@@ -87,8 +88,9 @@ func (k Keeper) PrepareRequest(ctx sdk.Context, r types.RequestSpec) error {
 	if err != nil {
 		return sdkerrors.Wrapf(types.ErrBadWasmExecution, err.Error())
 	}
-	k.Prepare(startPrepare, convertToCosmosGas(output.GasUsed))
+	k.Prepare(startPrepare, FixedOwasmGas+convertToCosmosGas(output.GasUsed))
 	preparedTime := time.Since(startPrepare)
+	ctx.GasMeter().ConsumeGas(FixedOwasmGas, "FIXED_PREPARE_GAS")
 	ctx.GasMeter().ConsumeGas(convertToCosmosGas(output.GasUsed), "PREPARE_GAS")
 	// Preparation complete! It's time to collect raw request ids.
 	req.RawRequests = env.GetRawRequests()
@@ -127,14 +129,17 @@ func (k Keeper) PrepareRequest(ctx sdk.Context, r types.RequestSpec) error {
 		))
 	}
 
+	ctx.GasMeter().ConsumeGas(FixedOwasmGas, "FIXED_RESOLVE_RESERVATION")
 	ctx.GasMeter().ConsumeGas(convertToCosmosGas(FixedResolve), "RESOLVE_RESERVATION")
+
 	k.Request(start, ctx.GasMeter().GasConsumed()-startGas)
 	k.NewRequest(
 		ctx,
 		int64(ctx.GasMeter().GasConsumed()-startGas),
 		time.Since(start),
-		int64(convertToCosmosGas(FixedResolve)),
+		int64(FixedOwasmGas+convertToCosmosGas(output.GasUsed)),
 		preparedTime,
+		r.GetCalldata(),
 	)
 	return nil
 }
@@ -150,7 +155,7 @@ func (k Keeper) ResolveRequest(ctx sdk.Context, reqID types.RequestID) {
 	code := k.GetFile(script.Filename)
 	startExec := time.Now()
 	output, err := k.owasmVM.Execute(code, FixedResolve, types.MaxDataSize, env)
-	k.Execute(startExec, uint64(output.GasUsed)/5)
+	k.Execute(startExec, convertToCosmosGas(output.GasUsed))
 	timeExec := time.Since(startExec)
 	if err != nil {
 		fmt.Printf("Fail to resolve %s\n", err.Error())
@@ -166,7 +171,8 @@ func (k Keeper) ResolveRequest(ctx sdk.Context, reqID types.RequestID) {
 		int64(reqID),
 		int64(ctx.GasMeter().GasConsumed()-gasStart),
 		time.Since(start),
-		int64(convertToCosmosGas(output.GasUsed)),
+		int64(convertToCosmosGas(output.GasUsed)+FixedOwasmGas),
 		timeExec,
+		req.Calldata,
 	)
 }

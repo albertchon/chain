@@ -93,6 +93,7 @@ func handleMsgCreateOracleScript(ctx sdk.Context, k Keeper, m MsgCreateOracleScr
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("X")
 	id := k.AddOracleScript(ctx, types.NewOracleScript(
 		m.Owner, m.Name, m.Description, filename, m.Schema, m.SourceCodeURL,
 	))

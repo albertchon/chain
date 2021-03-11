@@ -47,6 +47,7 @@ func (db *DB) Flush() {
 
 func (db *DB) Insert(table string, object interface{}) {
 	db.entries = append(db.entries, entry{table, object})
+	fmt.Printf("Add %d/%d", len(db.entries), db.cap)
 	if len(db.entries) >= db.cap {
 		db.Flush()
 	}

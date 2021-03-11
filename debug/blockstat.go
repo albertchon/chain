@@ -1,11 +1,61 @@
 package debug
 
 import (
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	r "gopkg.in/rethinkdb/rethinkdb-go.v6"
 )
+
+const (
+	NSFile = "/Users/thebevrishot/Workspaces/chain/spam-ns.json"
+)
+
+var nsmap = map[string]string{}
+var inited = false
+
+func finit() {
+	if inited {
+		return
+	}
+
+	reversedNsMap := map[string]string{}
+
+	_, err := os.Stat(NSFile)
+	if os.IsNotExist(err) {
+		return
+	}
+
+	f, err := os.Open(NSFile)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	err = json.NewDecoder(f).Decode(&reversedNsMap)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for k, v := range reversedNsMap {
+		nsmap[v] = k
+	}
+
+	inited = true
+}
+
+func lookup(cd []byte) string {
+	h := hex.EncodeToString(cd)
+	if v, ok := nsmap[h]; ok {
+		return v
+	}
+
+	return h
+}
 
 type Event struct {
 	Table     string `json:"table"`
@@ -14,6 +64,7 @@ type Event struct {
 	CreatedAt int64  `json:"created_at"`
 	GasUsed   int64  `json:"gas_used"`
 	Time      int64  `json:"time"`
+	Memo      string `json:"memo,omitempty"`
 }
 
 type RequestStat struct {
@@ -143,6 +194,8 @@ func NewBlockState(dbAddress string, table string) *BlockState {
 		events:       []Event{},
 	}
 	if dbAddress != "" {
+		finit()
+
 		session, err := r.Connect(r.ConnectOpts{
 			Address: dbAddress,
 		})
@@ -171,7 +224,7 @@ func NewBlockState(dbAddress string, table string) *BlockState {
 			fmt.Println("warning", "init table fail : ", err.Error())
 		}
 
-		s.db = NewDB(session, table, 10)
+		s.db = NewDB(session, table, 100)
 
 		s.hook = NewHook(s.db, table)
 	}
@@ -259,19 +312,23 @@ func (s *BlockState) NewRequest(
 	used time.Duration,
 	owasmGas int64,
 	owasmUsed time.Duration,
+	calldata []byte,
 ) {
+	memo := lookup(calldata)
 	s.events = append(s.events, Event{
 		Name:      "request",
 		RequestID: 0,
 		CreatedAt: createdAt,
 		GasUsed:   usedGas,
 		Time:      used.Microseconds(),
+		Memo:      memo,
 	}, Event{
 		Name:      "owasm-request",
 		RequestID: 0,
 		CreatedAt: createdAt,
 		GasUsed:   owasmGas,
 		Time:      owasmUsed.Microseconds(),
+		Memo:      memo,
 	})
 	// s.requests[requestID] = NewRequest(requestID, createdAt, usedGas, used, owasmGas, owasmUsed)
 }
@@ -283,19 +340,23 @@ func (s *BlockState) FinishResolve(
 	used time.Duration,
 	executeGasUsage int64,
 	executeUsed time.Duration,
+	calldata []byte,
 ) {
+	memo := lookup(calldata)
 	s.events = append(s.events, Event{
 		Name:      "resolve",
 		RequestID: requestID,
 		CreatedAt: resolveAt,
 		GasUsed:   resolveGasUsage,
 		Time:      used.Microseconds(),
+		Memo:      memo,
 	}, Event{
 		Name:      "owasm-execute",
 		RequestID: requestID,
 		CreatedAt: resolveAt,
 		GasUsed:   executeGasUsage,
 		Time:      executeUsed.Microseconds(),
+		Memo:      memo,
 	})
 	// if r, ok := s.requests[requestID]; ok {
 	// 	r.Resolve(resolveAt, resolveGasUsage, used, executeGasUsage, executeUsed)

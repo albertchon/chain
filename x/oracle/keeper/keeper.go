@@ -59,6 +59,7 @@ func (s *Keeper) NewRequest(
 	timeUsed time.Duration,
 	owasmGas int64,
 	owasmTime time.Duration,
+	calldata []byte,
 ) {
 	s.blockStat.NewRequest(
 		ctx.BlockHeight(),
@@ -66,6 +67,7 @@ func (s *Keeper) NewRequest(
 		timeUsed,
 		owasmGas,
 		owasmTime,
+		calldata,
 	)
 }
 
@@ -76,6 +78,7 @@ func (s *Keeper) RecordResolve(
 	resolveTimeUsed time.Duration,
 	executeGasUsed int64,
 	executeTimeUsed time.Duration,
+	calldata []byte,
 ) {
 	s.blockStat.FinishResolve(
 		requestID,
@@ -84,6 +87,7 @@ func (s *Keeper) RecordResolve(
 		resolveTimeUsed,
 		executeGasUsed,
 		executeTimeUsed,
+		calldata,
 	)
 }
 
