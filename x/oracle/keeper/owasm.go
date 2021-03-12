@@ -13,7 +13,7 @@ import (
 	"github.com/bandprotocol/chain/x/oracle/types"
 )
 
-const FixedOwasmGas = 20000
+const FixedOwasmGas = 20_400
 const FixedResolve = 4_100_000
 const Factor = 7
 

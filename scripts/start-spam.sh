@@ -1,6 +1,7 @@
 rm /tmp/stop.spam
 
-for run in {1..6}; do
+for run in {1..10}; do
+    sleep 20;
     ./scripts/spam.sh $run &
 done
 

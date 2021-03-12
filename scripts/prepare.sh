@@ -3,7 +3,7 @@ make install
 
 cp ~/.bandd/config/genesis.json .
 
-rm -rf files
+# rm -rf files
 cp -r ~/.bandd/files .
 
 cd ..
