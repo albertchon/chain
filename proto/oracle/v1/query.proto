@@ -6,6 +6,7 @@ option go_package = "github.com/bandprotocol/chain/x/oracle/types";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "oracle/v1/oracle.proto";
+import "cosmos/base/v1beta1/coin.proto";
 
 // Query defines the gRPC querier service.
 service Query {
@@ -68,6 +69,11 @@ service Query {
   rpc RequestPrice(QueryRequestPriceRequest)
       returns (QueryRequestPriceResponse) {
     option (google.api.http).post = "/oracle/request_prices";
+  }
+
+  // RequestPool queries the request pool balance.
+  rpc RequestPool(QueryRequestPoolRequest) returns (QueryRequestPoolResponse) {
+    option (google.api.http).post = "/oracle/v1/request_pool";
   }
 }
 
@@ -169,4 +175,21 @@ message QueryRequestPriceResponse {
   bytes calldata = 2;
   int64 ask_count = 3;
   int64 min_count = 4;
+}
+
+// QueryRequestPoolRequest is request type for the Query/RequestPool RPC
+// method.
+message QueryRequestPoolRequest {
+  string request_key = 1;
+  string port_id = 2;
+  string channel_id = 3;
+}
+
+// QueryRequestPoolResponse is response type for the Query/RequestPool RPC
+// method.
+message QueryRequestPoolResponse {
+  repeated cosmos.base.v1beta1.Coin balance = 1 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
 }

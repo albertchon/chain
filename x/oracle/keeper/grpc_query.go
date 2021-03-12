@@ -154,3 +154,13 @@ func (k Querier) RequestSearch(c context.Context, req *types.QueryRequestSearchR
 func (k Querier) RequestPrice(c context.Context, req *types.QueryRequestPriceRequest) (*types.QueryRequestPriceResponse, error) {
 	return &types.QueryRequestPriceResponse{}, nil
 }
+
+func (k Querier) RequestPool(c context.Context, req *types.QueryRequestPoolRequest) (*types.QueryRequestPoolResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	ctx := sdk.UnwrapSDKContext(c)
+	b := k.GetRequetPoolBalances(ctx, req.RequestKey, req.PortId, req.ChannelId)
+	return &types.QueryRequestPoolResponse{Balance: b}, nil
+
+}
