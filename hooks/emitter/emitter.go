@@ -327,13 +327,14 @@ func (h *Hook) AfterDeliverTx(ctx sdk.Context, req abci.RequestDeliverTx, res ab
 	messages := []map[string]interface{}{}
 	for idx, msg := range tx.GetMsgs() {
 		var detail = make(common.JsDict)
-		h.decodeMsg(ctx, msg, detail)
+		// h.decodeMsg(ctx, msg, detail)
 		if res.IsOK() {
 			h.handleMsg(ctx, txHash, msg, logs[idx], detail)
 		}
 		messages = append(messages, common.JsDict{
-			"msg":  detail,
-			"type": msg.Type(),
+			"msg":   string(h.cdc.MustMarshalJSON(msg)),
+			"type":  msg.Type(),
+			"extra": detail,
 		})
 	}
 	signers := tx.GetMsgs()[0].GetSigners()
