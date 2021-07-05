@@ -31,8 +31,8 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
-	band "github.com/bandprotocol/chain/app"
-	"github.com/bandprotocol/chain/app/params"
+	band "github.com/bandprotocol/chain/v2/app"
+	"github.com/bandprotocol/chain/v2/app/params"
 )
 
 const (
@@ -98,12 +98,12 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		txCommand(),
 		keys.Commands(band.DefaultNodeHome),
 	)
-
-	rootCmd.PersistentFlags().Uint32(flagWithOwasmCacheSize, 100, "[Experimental] Number of oracle scripts to cache")
 }
 func addModuleInitFlags(startCmd *cobra.Command) {
 	crisis.AddModuleInitFlags(startCmd)
 	startCmd.Flags().String(flagWhiteListRequesters, "", "Specify a whitelist of requester")
+	startCmd.Flags().Uint32(flagWithOwasmCacheSize, 100, "[Experimental] Number of oracle scripts to cache")
+	startCmd.Flags().Bool(flagDisableFeelessReports, false, "Disable feeless reports during congestion")
 }
 
 func queryCommand() *cobra.Command {
